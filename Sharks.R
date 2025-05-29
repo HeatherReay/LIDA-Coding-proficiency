@@ -1,11 +1,17 @@
+# Assign the 'Total' dataset to a new variable 'MyData' for manipulation
 MyData<-Total
+
+# Convert 'Interaction number' to a factor (categorical variable)
 MyData$`Interaction number` <- as.factor(MyData$`Interaction number`)
+# Convert 'Feeding Method' to a factor
 MyData$`Feeding Method` <- as.factor(MyData$`Feeding Method`)
 
 library(dplyr)
 
 #Count of data, Might not be needed now
+# Count how many records exist for each 'Feeding Method'
 MyData %>% count(MyData$`Feeding Method`)
+# Count how many records exist for each 'Interaction Type'
 MyData %>% count(MyData$`Interaction Type`)
 
 
@@ -13,39 +19,38 @@ MyData %>% count(MyData$`Interaction Type`)
 #Use Total Data for Boxplot 
 #
 boxplot((Total$Total~ Total$`Interaction Type`* Total$`Feeding Method`),
-        at = c(1,2,4,5),
-        las= 3,
+        at = c(1,2,4,5), # Custom positions for boxplot groups
+        las= 3, # Rotate axis labels
         col = c("darkgrey","grey"),
         border = "black",
         horizontal = FALSE,
         notch = FALSE,
         ylab= "Frequency of Competitive Interactions",
         xlab= "Feeding Method - Type of Competition",
-        xaxt = "n",)
-axis(side = 1, at = c(1,2,4,5),
+        xaxt = "n",)  Don't draw x-axis labels yet
+axis(side = 1, at = c(1,2,4,5), # Custom x-axis labels
      labels = c("Scatter - Contest", "Scatter - Scramble", "Target - Contest", "Target - Scramble"), las = 0)
 
 boxplot.stats()
-
+# Get summary stats from boxplot
 Summary<-boxplot(Total$Total~ Total$`Interaction Type`* Total$`Feeding Method`)$stats
 colnames(Summary)<-c("Scatter - Contest", "Scatter - Scramble", "Target - Contest", "Target - Scramble")
 rownames(Summary)<-c("Min","First Quartile","Median","Third Quartile","Maximum")
 Summary
 
+# Test significance of interaction between factors
 one.way <- aov(Total$Total~ Total$`Interaction Type`* Total$`Feeding Method`)
 summary(one.way)
 
 
-
-
 #Mixed Model time
-
+# Install package for mixed models
 install.packages("lme4")
 library(lme4)
-summary(Data)
+summary(Data) # Show structure of 'Data'
 
 #Fit Mixed Model
-Data$ID <- factor(Data$ID)
+Data$ID <- factor(Data$ID) # Ensure 'ID' is a factor (for random effects)
 
 
 interaction_counts1 <- data.frame(Species = character(),
@@ -73,11 +78,13 @@ for (species in unique(Data$`Competitor Species`)) {
 }
 print(interaction_counts1)
 
+# Fit Mixed Models & Compare AIC
 model <- lmer(ModelData$Count ~ ModelData$`Feeding Method` + ModelData$Species + ModelData$`Interaction Type` + (1|ModelData$Date), data = ModelData)
 summary(model)
-AIC_value <- AIC(model)
+AIC_value <- AIC(model) # Model fit
 AIC_value
 
+# Alternative models
 model1 <- lmer(ModelData$Count ~ ModelData$`Feeding Method` + ModelData$Species + (1|ModelData$Date), data = ModelData)
 summary(model1)
 AIC_value1 <- AIC(model1)
@@ -88,18 +95,17 @@ summary(model2)
 AIC_value2 <- AIC(model2)
 AIC_value2
 
+## Generalized linear version
 model <- glmer(ModelData$Count ~ ModelData$`Feeding Method` + ModelData$Species + ModelData$`Interaction Type` + (1|ModelData$Date), data = ModelData)
 #id as random factor
 #+ (1|Data$ID),
 
-
-
-
-
+#Species Frequency Barplots
 #Culmative frequency plot
 str(Data)
-freq <- table(Data$Species)
+freq <- table(Data$Species) # Count observations by Species
 freq
+
 #Histogram type graph
 barplot(freq,
         xlab = "Species",
@@ -136,6 +142,8 @@ filtered_data <- subset(Data, Data$Species == "Seabass" & Data$`Survey Number` %
 # Count the number of competitive interactions
 filtered_data
 print(filtered_data, n=35)
+
+#For contest interactions
 barplot(Adpt$Average.Interactions.C~Adpt$Species,
         xlab = "Species",
         ylab = "Frequency of Competition per Individual (Average)",
@@ -146,7 +154,7 @@ barplot(Adpt$Average.Interactions.C~Adpt$Species,
 )
 abline(h = seq(0, max(Adpt$Average.Interactions.C) * 1.2, by = 5), lty = "dotted", col = "gray")
 
-
+# For victim species
 barplot(Adpt$Average.Interactions.V~Adpt$Species,
         xlab = "Species",
         ylab = "Frequency of Competition per Individual (Average) ",
@@ -160,7 +168,7 @@ abline(h = seq(0, max(Adpt$Average.Interactions.V) * 1.2, by = 5), lty = "dotted
 
 
 #Culmative frequency
-cum_freq <- cumsum(table(Data$Species))
+cum_freq <- cumsum(table(Data$Species)) # Victim species
 cum_freq
 cum_freq <- cum_freq[cum_freq != 2]
 #Check for 'NA'
@@ -170,7 +178,7 @@ clean_data <- Data[!is.na(Data$Species), ]
 cum_freq <- as.numeric(cum_freq)
 
 #Culmative frequency
-cum_freq2 <- cumsum(table(Data$`Competitor Species`))
+cum_freq2 <- cumsum(table(Data$`Competitor Species`))  # Competitor species
 cum_freq2
 #Check for 'NA'
 is.na(Data$`Competitor Species`)
@@ -178,6 +186,8 @@ is.na(Data$`Competitor Species`)
 clean_data <- Data[!is.na(Data$`Competitor Species`), ]
 cum_freq2 <- as.numeric(cum_freq2)
 #Adds target into cum_freq2 at (0)
+
+# Add Target manually to correct for missing value
 missing_value_pos <- which(labels1 == "Target")  # Find the position of 'E' in the first plot's data
 cum_freq2 <- c(cum_freq2[1:(missing_value_pos-1)], 202, cum_freq2[missing_value_pos:length(cum_freq2)])
 
